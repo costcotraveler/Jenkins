@@ -1,10 +1,78 @@
-pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      steps {
-        sleep 1
-      }
-    }
-  }
-}
+jenkins:
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+      users:
+      - id: "${chart-admin-username}"
+        name: "Jenkins Admin"
+        password: "${chart-admin-password}"
+  disableRememberMe: false
+  remotingSecurity:
+    enabled: true
+  mode: NORMAL
+  numExecutors: 0
+  projectNamingStrategy: "standard"
+  markupFormatter:
+    plainText
+  clouds:
+  - kubernetes:
+      containerCapStr: "10"
+      defaultsProviderTemplate: ""
+      connectTimeout: "5"
+      readTimeout: "15"
+      jenkinsUrl: "http://jenkins-smb:8080"
+      jenkinsTunnel: "jenkins-smb-agent:50000"
+      maxRequestsPerHostStr: "32"
+      name: "kubernetes"
+      namespace: "default"
+      serverUrl: "https://kubernetes.default"
+      podLabels:
+      - key: "jenkins/jenkins-smb-jenkins-agent"
+        value: "true"
+      templates:
+        - name: "default"
+          containers:
+          - name: "jnlp"
+            alwaysPullImage: false
+            args: "^${computer.jnlpmac} ^${computer.name}"
+            envVars:
+              - envVar:
+                  key: "JENKINS_URL"
+                  value: "http://jenkins-smb.default.svc.cluster.local:8080/"
+            image: "us03l81tkgcrg01.mgmt.costcotravel.com/architect-test/jenkins/inbound-k8s-agent:latest-jdk11"
+            privileged: "false"
+            resourceLimitCpu: 512m
+            resourceLimitMemory: 512Mi
+            resourceRequestCpu: 512m
+            resourceRequestMemory: 512Mi
+            runAsUser: 
+            runAsGroup: 
+            ttyEnabled: false
+            workingDir: /home/jenkins
+          idleMinutes: 0
+          instanceCap: 2147483647
+          imagePullSecrets:
+          - name: regcred
+          label: "jenkins-smb-jenkins-agent "
+          nodeUsageMode: "NORMAL"
+          podRetention: Never
+          showRawYaml: true
+          serviceAccount: "default"
+          slaveConnectTimeoutStr: "100"
+          yamlMergeStrategy: override
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+security:
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+unclassified:
+  location:
+    adminAddress: 
+    url: http://jenkins.k8s.pacific.costcotravel.com
